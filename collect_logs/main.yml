@@ -1,0 +1,15 @@
+---
+##これはメインのプレイブックです
+
+- name: collect logs from testservers
+  hosts: testservers
+  remote_user: root
+  become: yes
+  become_user: root
+  gather_facts: false
+  vars:
+    yeardir: "{{ lookup('pipe','date +%Y') }}"
+    monthdir: "{{ lookup('pipe','date +%m') }}"
+  
+  roles:
+    - testservers

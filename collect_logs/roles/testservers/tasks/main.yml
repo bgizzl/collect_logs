@@ -1,0 +1,23 @@
+---
+
+#/var/logディレクトリログ収集
+
+ - name: コピー用一時ディレクトリ作成
+   file: path=/var/log/compress state=directory owner=root group=root mode=0755
+
+ - name: 収集ログを一時ディレクトリにコピー
+   shell: cd /var/log; find -maxdepth 1 -name "messages-*`date +%Y%m`*" -o -name "maillog-*`date +%Y%m`*" -o -name "secure-*`date +%Y%m`*" -o -name "spooler-*`date +%Y%m`*" -o -name "cron-*`date +%Y%m`*" | xargs -I {} cp -pr {} /var/log/compress/{}
+
+ - name: コピーしたファイルを圧縮
+   shell: cd /var/log/compress; find -maxdepth 1 -name "messages-*" -o -name "maillog-*" -o -name "secure-*" -o -name "spooler-*" -o -name "cron-*" | xargs -I {} gzip -9v {} 
+
+ - name: 圧縮したファイルを変数値に格納
+   shell: (cd /var/log/compress; find -maxdepth 1 -name "messages-*" -o -name "maillog-*" -o -name "secure-*" -o -name "spooler-*" -o -name "cron-*" ) | cut -d'/' -f2
+   register: files_to_copy
+
+ - name: 圧縮したファイルを送信
+   fetch: src=/var/log/compress/{{ item }} dest=/var/log/ansible-collect-logs/{{inventory_hostname}}/{{ yeardir}}/{{ monthdir}}/ flat=yes
+   with_items: "{{ files_to_copy.stdout_lines }}"
+   
+ - name: 一時ディレクトリの削除
+   file: path=/var/log/compress state=absent
